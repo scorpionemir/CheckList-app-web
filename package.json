@@ -12,6 +12,7 @@
   "dependencies": {
     "@code-plate/iran-cities": "^1.2.0",
     "formik": "^2.4.9",
+    "jalaali-js": "^2.0.1",
     "leaflet": "^1.9.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

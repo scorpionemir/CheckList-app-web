@@ -16,13 +16,76 @@ import {
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import LoadingState from '../components/common/LoadingState'
+import { isValidJalaaliDate, toGregorian } from 'jalaali-js'
 
 const provinces = getProvincesList()
+
+function normalizeDigits(value = '') {
+  return String(value)
+    .replace(/[۰-۹]/g, (digit) =>
+      String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)),
+    )
+    .replace(/[٠-٩]/g, (digit) =>
+      String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)),
+    )
+}
+
+function parseJalaliDate(value) {
+  if (typeof value !== 'string') return null
+
+  const normalized = normalizeDigits(value).trim()
+
+  const match = normalized.match(
+    /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/,
+  )
+
+  if (!match) return null
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+
+  if (
+    year < 1200 ||
+    year > 1405 ||
+    !isValidJalaaliDate(year, month, day)
+  ) {
+    return null
+  }
+
+  return { year, month, day }
+}
+
+function jalaliToGregorianISO(value) {
+  const jalaliDate = parseJalaliDate(value)
+
+  if (!jalaliDate) {
+    throw new Error('تاریخ تولد شمسی معتبر نیست.')
+  }
+
+  const { gy, gm, gd } = toGregorian(
+    jalaliDate.year,
+    jalaliDate.month,
+    jalaliDate.day,
+  )
+
+  return [
+    gy,
+    String(gm).padStart(2, '0'),
+    String(gd).padStart(2, '0'),
+  ].join('-')
+}
 
 const userSchema = Yup.object({
   firstName: Yup.string().trim().required('نام را وارد کنید'),
   lastName: Yup.string().trim().required('نام خانوادگی را وارد کنید'),
-  birthDate: Yup.string().required('تاریخ تولد را وارد کنید'),
+  birthDate: Yup.string()
+  .required('تاریخ تولد را وارد کنید')
+  .test(
+    'valid-jalali-date',
+    'تاریخ تولد شمسی معتبر نیست؛ نمونه: ۱۳۷۵/۰۶/۲۳',
+    (value) => Boolean(parseJalaliDate(value)),
+  ),
   fatherName: Yup.string().trim().required('نام پدر را وارد کنید'),
 
   nationalId: Yup.string()
@@ -221,7 +284,7 @@ function UsersPage() {
     const payload = {
       firstName: values.firstName.trim(),
       lastName: values.lastName.trim(),
-      birthDate: values.birthDate,
+      birthDate: jalaliToGregorianISO(values.birthDate),
       fatherName: values.fatherName.trim(),
       nationalId: values.nationalId.trim(),
       mobile: values.mobile.trim(),
@@ -360,10 +423,10 @@ function UsersPage() {
                     <FieldInput name="fatherName" label="نام پدر" />
 
                     <FieldInput
-                      name="birthDate"
-                      label="تاریخ تولد"
-                      type="date"
-                    />
+  name="birthDate"
+  label="تاریخ تولد (شمسی)"
+  placeholder="مثلاً ۱۳۷۵/۰۶/۲۳"
+/>
 
                     <FieldInput
                       name="nationalId"
