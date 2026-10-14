@@ -1,12 +1,26 @@
+// CheckList-Web/src/pages/UsersPage.jsx
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Formik, Form, Field, ErrorMessage } from 'formik'
+import {
+  Formik,
+  Form,
+  Field,
+  ErrorMessage,
+  useField,
+} from 'formik'
 import * as Yup from 'yup'
+
 import {
   getProvincesList,
   getCities,
 } from '@code-plate/iran-cities'
+
+import { isValidJalaaliDate, toGregorian } from 'jalaali-js'
+
+import DatePicker from 'react-multi-date-picker'
+import persian from 'react-date-object/calendars/persian'
+import persian_fa from 'react-date-object/locales/persian_fa'
 
 import PageTitle from '../components/common/PageTitle'
 import {
@@ -16,9 +30,12 @@ import {
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import LoadingState from '../components/common/LoadingState'
-import { isValidJalaaliDate, toGregorian } from 'jalaali-js'
 
 const provinces = getProvincesList()
+
+// --------------------------------------------------
+// توابع تاریخ شمسی
+// --------------------------------------------------
 
 function normalizeDigits(value = '') {
   return String(value)
@@ -28,6 +45,12 @@ function normalizeDigits(value = '') {
     .replace(/[٠-٩]/g, (digit) =>
       String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)),
     )
+}
+
+function toPersianDigits(value = '') {
+  return String(value).replace(/\d/g, (digit) =>
+    '۰۱۲۳۴۵۶۷۸۹'[Number(digit)],
+  )
 }
 
 function parseJalaliDate(value) {
@@ -76,37 +99,94 @@ function jalaliToGregorianISO(value) {
   ].join('-')
 }
 
+function formatJalaliInput(value = '') {
+  const digits = normalizeDigits(value)
+    .replace(/\D/g, '')
+    .slice(0, 8)
+
+  if (digits.length <= 4) {
+    return toPersianDigits(digits)
+  }
+
+  if (digits.length <= 6) {
+    return toPersianDigits(
+      `${digits.slice(0, 4)}/${digits.slice(4)}`,
+    )
+  }
+
+  return toPersianDigits(
+    `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6)}`,
+  )
+}
+
+// --------------------------------------------------
+// اعتبارسنجی فرم
+// --------------------------------------------------
+
 const userSchema = Yup.object({
-  firstName: Yup.string().trim().required('نام را وارد کنید'),
-  lastName: Yup.string().trim().required('نام خانوادگی را وارد کنید'),
+  firstName: Yup.string()
+    .trim()
+    .required('نام را وارد کنید'),
+
+  lastName: Yup.string()
+    .trim()
+    .required('نام خانوادگی را وارد کنید'),
+
   birthDate: Yup.string()
-  .required('تاریخ تولد را وارد کنید')
-  .test(
-    'valid-jalali-date',
-    'تاریخ تولد شمسی معتبر نیست؛ نمونه: ۱۳۷۵/۰۶/۲۳',
-    (value) => Boolean(parseJalaliDate(value)),
-  ),
-  fatherName: Yup.string().trim().required('نام پدر را وارد کنید'),
+    .required('تاریخ تولد را وارد کنید')
+    .test(
+      'valid-jalali-date',
+      'تاریخ تولد شمسی معتبر نیست؛ نمونه: ۱۳۷۵/۰۶/۲۳',
+      (value) => Boolean(parseJalaliDate(value)),
+    ),
+
+  fatherName: Yup.string()
+    .trim()
+    .required('نام پدر را وارد کنید'),
 
   nationalId: Yup.string()
     .matches(/^\d{10}$/, 'کد ملی باید ۱۰ رقم باشد')
     .required('کد ملی را وارد کنید'),
 
   mobile: Yup.string()
-    .matches(/^09\d{9}$/, 'شماره موبایل باید با 09 شروع شده و ۱۱ رقم باشد')
+    .matches(
+      /^09\d{9}$/,
+      'شماره موبایل باید با 09 شروع شده و ۱۱ رقم باشد',
+    )
     .required('شماره موبایل را وارد کنید'),
 
   role: Yup.string()
-    .oneOf(['contractor', 'manager', 'admin'], 'نقش انتخاب‌شده معتبر نیست')
+    .oneOf(
+      ['contractor', 'manager', 'admin'],
+      'نقش انتخاب‌شده معتبر نیست',
+    )
     .required('نقش کاربر را انتخاب کنید'),
 
-  province: Yup.string().required('استان را انتخاب کنید'),
-  city: Yup.string().required('شهر را انتخاب کنید'),
-  district: Yup.string().trim().required('منطقه را وارد کنید'),
-  street: Yup.string().trim().required('خیابان را وارد کنید'),
-  alley: Yup.string().trim().required('کوچه را وارد کنید'),
-  plaque: Yup.string().trim().required('پلاک را وارد کنید'),
-  postalCode: Yup.string().trim().required('کد پستی را وارد کنید'),
+  province: Yup.string()
+    .required('استان را انتخاب کنید'),
+
+  city: Yup.string()
+    .required('شهر را انتخاب کنید'),
+
+  district: Yup.string()
+    .trim()
+    .required('منطقه را وارد کنید'),
+
+  street: Yup.string()
+    .trim()
+    .required('خیابان را وارد کنید'),
+
+  alley: Yup.string()
+    .trim()
+    .required('کوچه را وارد کنید'),
+
+  plaque: Yup.string()
+    .trim()
+    .required('پلاک را وارد کنید'),
+
+  postalCode: Yup.string()
+    .trim()
+    .required('کد پستی را وارد کنید'),
 })
 
 const initialValues = {
@@ -125,6 +205,10 @@ const initialValues = {
   plaque: '',
   postalCode: '',
 }
+
+// --------------------------------------------------
+// فیلد عمومی فرم
+// --------------------------------------------------
 
 function FieldInput({
   name,
@@ -152,6 +236,138 @@ function FieldInput({
     </div>
   )
 }
+
+// --------------------------------------------------
+// فیلد تاریخ تولد شمسی همراه با تقویم
+// این کامپوننت باید بیرون از UsersPage باشد.
+// --------------------------------------------------
+
+function JalaliDateField({ name, label }) {
+  const [field, meta, helpers] = useField(name)
+
+  const hasError = meta.touched && Boolean(meta.error)
+
+  const normalizedDate = parseJalaliDate(field.value)
+
+  const datePickerValue = normalizedDate
+    ? [
+        normalizedDate.year,
+        String(normalizedDate.month).padStart(2, '0'),
+        String(normalizedDate.day).padStart(2, '0'),
+      ].join('/')
+    : ''
+
+  return (
+    <div className="user-form-group" style={{ width: '100%' }}>
+      <label
+        htmlFor={name}
+        style={{
+          display: 'block',
+          marginBottom: '8px',
+          textAlign: 'right',
+        }}
+      >
+        {label}
+      </label>
+
+      <DatePicker
+        value={datePickerValue}
+        onChange={(date) => {
+          if (!date) return
+
+          const formattedDate = [
+            String(date.year).padStart(4, '0'),
+            String(date.month.number).padStart(2, '0'),
+            String(date.day).padStart(2, '0'),
+          ].join('/')
+
+          helpers.setValue(toPersianDigits(formattedDate))
+          helpers.setTouched(true)
+        }}
+        calendar={persian}
+        locale={persian_fa}
+        format="YYYY/MM/DD"
+        calendarPosition="bottom-right"
+        editable={false}
+        render={(_, openCalendar) => (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+            }}
+          >
+            <input
+              id={name}
+              name={name}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              dir="ltr"
+              placeholder="۱۳۷۵/۰۶/۲۳"
+              value={field.value || ''}
+              onChange={(event) => {
+                helpers.setValue(
+                  formatJalaliInput(event.target.value),
+                )
+              }}
+              onBlur={() => helpers.setTouched(true)}
+              aria-invalid={hasError}
+              aria-describedby={
+                hasError ? `${name}-error` : undefined
+              }
+              className="form-input"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                boxSizing: 'border-box',
+                direction: 'ltr',
+                textAlign: 'center',
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={openCalendar}
+              aria-label="انتخاب تاریخ از تقویم"
+              title="انتخاب تاریخ از تقویم"
+              style={{
+                flexShrink: 0,
+                padding: '9px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                background: '#fff',
+                fontSize: '18px',
+              }}
+            >
+              📅
+            </button>
+          </div>
+        )}
+      />
+
+      {hasError && (
+        <span
+          id={`${name}-error`}
+          className="field-error"
+          style={{
+            display: 'block',
+            marginTop: '5px',
+            textAlign: 'right',
+          }}
+        >
+          {meta.error}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// --------------------------------------------------
+// توابع اطلاعات کاربران
+// --------------------------------------------------
 
 function getUserActiveStatus(user) {
   const value = user.isActive ?? user.is_active
@@ -185,14 +401,21 @@ function getRoleLabel(role) {
   return labels[normalizedRole] || role || 'نامشخص'
 }
 
+// --------------------------------------------------
+// صفحه مدیریت کاربران
+// --------------------------------------------------
+
 function UsersPage() {
   const { user: currentUser } = useAuth()
 
-  const currentRole = String(currentUser?.role || '').toLowerCase()
+  const currentRole = String(
+    currentUser?.role || '',
+  ).toLowerCase()
 
-  const canAssignPrivilegedRole = ['manager', 'admin'].includes(
-    currentRole,
-  )
+  const canAssignPrivilegedRole = [
+    'manager',
+    'admin',
+  ].includes(currentRole)
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -221,7 +444,9 @@ function UsersPage() {
 
       setUsers(list)
     } catch (error) {
-      setLoadError(error.message || 'دریافت کاربران ناموفق بود.')
+      setLoadError(
+        error.message || 'دریافت کاربران ناموفق بود.',
+      )
     } finally {
       setLoading(false)
     }
@@ -277,28 +502,41 @@ function UsersPage() {
 
   const inactiveUsersCount = users.length - activeUsersCount
 
-  async function handleCreate(values, { setSubmitting, resetForm }) {
+  async function handleCreate(
+    values,
+    { setSubmitting, resetForm },
+  ) {
     setCreateError('')
     setSuccessMessage('')
 
-    const payload = {
-      firstName: values.firstName.trim(),
-      lastName: values.lastName.trim(),
-      birthDate: jalaliToGregorianISO(values.birthDate),
-      fatherName: values.fatherName.trim(),
-      nationalId: values.nationalId.trim(),
-      mobile: values.mobile.trim(),
-      role: values.role,
+    let payload
 
-      address: {
-        province: values.province,
-        city: values.city,
-        district: values.district.trim(),
-        street: values.street.trim(),
-        alley: values.alley.trim(),
-        plaque: values.plaque.trim(),
-        postalCode: values.postalCode.trim(),
-      },
+    try {
+      payload = {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        birthDate: jalaliToGregorianISO(values.birthDate),
+        fatherName: values.fatherName.trim(),
+        nationalId: normalizeDigits(values.nationalId).trim(),
+        mobile: normalizeDigits(values.mobile).trim(),
+        role: values.role,
+
+        address: {
+          province: values.province,
+          city: values.city,
+          district: values.district.trim(),
+          street: values.street.trim(),
+          alley: values.alley.trim(),
+          plaque: values.plaque.trim(),
+          postalCode: normalizeDigits(values.postalCode).trim(),
+        },
+      }
+    } catch (error) {
+      setCreateError(
+        error.message || 'تاریخ تولد شمسی معتبر نیست.',
+      )
+      setSubmitting(false)
+      return
     }
 
     try {
@@ -313,58 +551,60 @@ function UsersPage() {
 
       await loadUsers()
     } catch (error) {
-      setCreateError(error.message || 'ثبت کاربر ناموفق بود.')
+      setCreateError(
+        error.message || 'ثبت کاربر ناموفق بود.',
+      )
     } finally {
       setSubmitting(false)
     }
   }
 
   async function handleDeleteUser(user) {
-  const userId = user.id
+    const userId = user.id
 
-  if (!userId) {
-    window.alert('شناسه کاربر مشخص نیست.')
-    return
-  }
+    if (!userId) {
+      window.alert('شناسه کاربر مشخص نیست.')
+      return
+    }
 
-  if (!getUserActiveStatus(user)) {
-    window.alert('این حساب از قبل غیرفعال است.')
-    return
-  }
+    if (!getUserActiveStatus(user)) {
+      window.alert('این حساب از قبل غیرفعال است.')
+      return
+    }
 
-  const fullName =
-    `${getUserFirstName(user)} ${getUserLastName(user)}`.trim() ||
-    getUserUsername(user) ||
-    'این کاربر'
+    const fullName =
+      `${getUserFirstName(user)} ${getUserLastName(user)}`.trim() ||
+      getUserUsername(user) ||
+      'این کاربر'
 
-  const confirmed = window.confirm(
-    `آیا می‌خواهی حساب «${fullName}» را غیرفعال کنی؟\n\n` +
-      'حساب دیگر نمی‌تواند وارد بخش‌های محافظت‌شده شود؛ ' +
-      'اما اطلاعات کاربر و چک‌لیست‌های قبلی او حذف نخواهند شد.',
-  )
-
-  if (!confirmed) return
-
-  setDeactivatingUserId(userId)
-  setSuccessMessage('')
-  setLoadError('')
-
-  try {
-    const result = await deactivateUser(userId)
-
-    setSuccessMessage(
-      result?.message || `حساب «${fullName}» غیرفعال شد.`,
+    const confirmed = window.confirm(
+      `آیا می‌خواهی حساب «${fullName}» را غیرفعال کنی؟\n\n` +
+        'حساب دیگر نمی‌تواند وارد بخش‌های محافظت‌شده شود؛ ' +
+        'اما اطلاعات کاربر و چک‌لیست‌های قبلی او حذف نخواهند شد.',
     )
 
-    await loadUsers()
-  } catch (error) {
-    window.alert(
-      error.message || 'غیرفعال‌سازی حساب انجام نشد.',
-    )
-  } finally {
-    setDeactivatingUserId(null)
+    if (!confirmed) return
+
+    setDeactivatingUserId(userId)
+    setSuccessMessage('')
+    setLoadError('')
+
+    try {
+      const result = await deactivateUser(userId)
+
+      setSuccessMessage(
+        result?.message || `حساب «${fullName}» غیرفعال شد.`,
+      )
+
+      await loadUsers()
+    } catch (error) {
+      window.alert(
+        error.message || 'غیرفعال‌سازی حساب انجام نشد.',
+      )
+    } finally {
+      setDeactivatingUserId(null)
+    }
   }
-}
 
   return (
     <div>
@@ -418,15 +658,25 @@ function UsersPage() {
                   </h3>
 
                   <div className="user-form-grid">
-                    <FieldInput name="firstName" label="نام" />
-                    <FieldInput name="lastName" label="نام خانوادگی" />
-                    <FieldInput name="fatherName" label="نام پدر" />
+                    <FieldInput
+                      name="firstName"
+                      label="نام"
+                    />
 
                     <FieldInput
-  name="birthDate"
-  label="تاریخ تولد (شمسی)"
-  placeholder="مثلاً ۱۳۷۵/۰۶/۲۳"
-/>
+                      name="lastName"
+                      label="نام خانوادگی"
+                    />
+
+                    <FieldInput
+                      name="fatherName"
+                      label="نام پدر"
+                    />
+
+                    <JalaliDateField
+                      name="birthDate"
+                      label="تاریخ تولد (شمسی)"
+                    />
 
                     <FieldInput
                       name="nationalId"
@@ -449,12 +699,19 @@ function UsersPage() {
                         name="role"
                         className="form-input"
                       >
-                        <option value="contractor">پیمانکار</option>
+                        <option value="contractor">
+                          پیمانکار
+                        </option>
 
                         {canAssignPrivilegedRole && (
                           <>
-                            <option value="manager">مدیر</option>
-                            <option value="admin">ادمین</option>
+                            <option value="manager">
+                              مدیر
+                            </option>
+
+                            <option value="admin">
+                              ادمین
+                            </option>
                           </>
                         )}
                       </Field>
@@ -467,7 +724,9 @@ function UsersPage() {
                     </div>
                   </div>
 
-                  <h3 className="form-section-heading">نشانی</h3>
+                  <h3 className="form-section-heading">
+                    نشانی
+                  </h3>
 
                   <div className="user-form-grid">
                     <div className="user-form-group">
@@ -479,13 +738,20 @@ function UsersPage() {
                         name="province"
                         className="form-input"
                         onChange={(event) => {
-                          const selectedProvince = event.target.value
+                          const selectedProvince =
+                            event.target.value
 
-                          setFieldValue('province', selectedProvince)
+                          setFieldValue(
+                            'province',
+                            selectedProvince,
+                          )
+
                           setFieldValue('city', '')
                         }}
                       >
-                        <option value="">استان را انتخاب کنید</option>
+                        <option value="">
+                          استان را انتخاب کنید
+                        </option>
 
                         {provinces.map((province) => (
                           <option
@@ -521,7 +787,10 @@ function UsersPage() {
                         </option>
 
                         {cities.map((city) => (
-                          <option key={city.id} value={city.fa}>
+                          <option
+                            key={city.id}
+                            value={city.fa}
+                          >
                             {city.fa}
                           </option>
                         ))}
@@ -534,15 +803,37 @@ function UsersPage() {
                       />
                     </div>
 
-                    <FieldInput name="district" label="منطقه" />
-                    <FieldInput name="street" label="خیابان" />
-                    <FieldInput name="alley" label="کوچه" />
-                    <FieldInput name="plaque" label="پلاک" />
-                    <FieldInput name="postalCode" label="کد پستی" />
+                    <FieldInput
+                      name="district"
+                      label="منطقه"
+                    />
+
+                    <FieldInput
+                      name="street"
+                      label="خیابان"
+                    />
+
+                    <FieldInput
+                      name="alley"
+                      label="کوچه"
+                    />
+
+                    <FieldInput
+                      name="plaque"
+                      label="پلاک"
+                    />
+
+                    <FieldInput
+                      name="postalCode"
+                      label="کد پستی"
+                    />
                   </div>
 
                   {createError && (
-                    <div className="form-error" role="alert">
+                    <div
+                      className="form-error"
+                      role="alert"
+                    >
                       {createError}
                     </div>
                   )}
@@ -553,7 +844,9 @@ function UsersPage() {
                       className="primary-button"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'در حال ثبت...' : 'ثبت کاربر'}
+                      {isSubmitting
+                        ? 'در حال ثبت...'
+                        : 'ثبت کاربر'}
                     </button>
 
                     <button
@@ -615,18 +908,24 @@ function UsersPage() {
               className="form-input"
               placeholder="نام، کد ملی، نام کاربری ..."
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
             />
           </div>
 
           <div className="users-filter">
-            <label htmlFor="users-status-filter">وضعیت</label>
+            <label htmlFor="users-status-filter">
+              وضعیت
+            </label>
 
             <select
               id="users-status-filter"
               className="form-input"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) =>
+                setStatusFilter(event.target.value)
+              }
             >
               <option value="all">همه کاربران</option>
               <option value="active">فعال</option>
@@ -635,13 +934,17 @@ function UsersPage() {
           </div>
 
           <div className="users-filter">
-            <label htmlFor="users-role-filter">نقش</label>
+            <label htmlFor="users-role-filter">
+              نقش
+            </label>
 
             <select
               id="users-role-filter"
               className="form-input"
               value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value)}
+              onChange={(event) =>
+                setRoleFilter(event.target.value)
+              }
             >
               <option value="all">همه نقش‌ها</option>
               <option value="contractor">پیمانکار</option>
@@ -701,7 +1004,8 @@ function UsersPage() {
                   const id = user.id
                   const firstName = getUserFirstName(user)
                   const lastName = getUserLastName(user)
-                  const username = getUserUsername(user) || '—'
+                  const username =
+                    getUserUsername(user) || '—'
                   const isActive = getUserActiveStatus(user)
 
                   return (
@@ -734,26 +1038,28 @@ function UsersPage() {
                           </Link>
 
                           <button
-  type="button"
-  className="user-delete-button"
-  onClick={() => handleDeleteUser(user)}
-  disabled={
-    !id ||
-    !isActive ||
-    deactivatingUserId === id
-  }
-  title={
-    !isActive
-      ? 'این حساب قبلاً غیرفعال شده است'
-      : 'غیرفعال‌سازی حساب کاربر'
-  }
->
-  {deactivatingUserId === id
-    ? 'در حال غیرفعال‌سازی...'
-    : isActive
-      ? 'غیرفعال‌سازی'
-      : 'غیرفعال'}
-</button>
+                            type="button"
+                            className="user-delete-button"
+                            onClick={() =>
+                              handleDeleteUser(user)
+                            }
+                            disabled={
+                              !id ||
+                              !isActive ||
+                              deactivatingUserId === id
+                            }
+                            title={
+                              !isActive
+                                ? 'این حساب قبلاً غیرفعال شده است'
+                                : 'غیرفعال‌سازی حساب کاربر'
+                            }
+                          >
+                            {deactivatingUserId === id
+                              ? 'در حال غیرفعال‌سازی...'
+                              : isActive
+                                ? 'غیرفعال‌سازی'
+                                : 'غیرفعال'}
+                          </button>
                         </div>
                       </td>
                     </tr>
