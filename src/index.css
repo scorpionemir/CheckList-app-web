@@ -1,0 +1,39 @@
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: #f5f7fb;
+  color: #1b2435;
+  font-family: Tahoma, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #285bc0;
+  outline-offset: 3px;
+}
+
+::selection {
+  background: #dbe8ff;
+  color: #173d83;
+}

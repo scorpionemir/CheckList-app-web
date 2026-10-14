@@ -1,0 +1,215 @@
+/* src/pages/AdvancedChecklistsPage.css */
+
+.advanced-checklists-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.advanced-checklists-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.advanced-checklists-heading h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.advanced-checklists-heading p {
+  margin: 0;
+  color: var(--muted-text, #64748b);
+  line-height: 1.8;
+}
+
+.advanced-back-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.advanced-back-link:hover {
+  text-decoration: underline;
+}
+
+.advanced-filter-panel,
+.advanced-table-panel {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+}
+
+.advanced-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.advanced-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.advanced-filter-field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.advanced-filter-field input,
+.advanced-filter-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 9px;
+  background: var(--card-bg, #fff);
+  color: var(--text-color, #0f172a);
+  font: inherit;
+}
+
+.advanced-filter-field input:focus,
+.advanced-filter-field select:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+  border-color: #2563eb;
+}
+
+.advanced-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.advanced-filter-actions span {
+  color: var(--muted-text, #64748b);
+}
+
+.advanced-filter-actions strong {
+  color: var(--text-color, #0f172a);
+}
+
+.advanced-filter-actions button {
+  padding: 10px 14px;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 9px;
+  background: var(--card-bg, #fff);
+  color: var(--text-color, #0f172a);
+  font: inherit;
+  cursor: pointer;
+}
+
+.advanced-filter-actions button:hover {
+  background: var(--table-hover-bg, #f1f5f9);
+}
+
+.advanced-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.advanced-checklists-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+}
+
+.advanced-checklists-table th,
+.advanced-checklists-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  vertical-align: middle;
+}
+
+.advanced-checklists-table th {
+  background: var(--table-header-bg, #f8fafc);
+  color: var(--muted-text, #475569);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.advanced-checklists-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.advanced-checklists-table tbody tr:hover {
+  background: var(--table-hover-bg, #f8fafc);
+}
+
+.advanced-checklists-table a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.advanced-checklists-table a:hover {
+  text-decoration: underline;
+}
+
+.advanced-checklist-id {
+  max-width: 180px;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+  color: var(--muted-text, #64748b);
+}
+
+.advanced-table-message,
+.advanced-table-error {
+  padding: 24px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+  text-align: center;
+  line-height: 1.8;
+}
+
+.advanced-table-message {
+  color: var(--muted-text, #64748b);
+}
+
+.advanced-table-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+@media (max-width: 950px) {
+  .advanced-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .advanced-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .advanced-filter-panel,
+  .advanced-table-panel {
+    padding: 14px;
+  }
+
+  .advanced-checklists-heading h1 {
+    font-size: 1.25rem;
+  }
+
+  .advanced-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
