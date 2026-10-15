@@ -18,7 +18,10 @@ import {
 
 import { isValidJalaaliDate, toGregorian } from 'jalaali-js'
 
-import DatePicker from 'react-multi-date-picker'
+import DatePickerModule from 'react-multi-date-picker'
+
+const DatePicker = DatePickerModule.default
+
 import persian from 'react-date-object/calendars/persian'
 import persian_fa from 'react-date-object/locales/persian_fa'
 
@@ -59,8 +62,8 @@ function parseJalaliDate(value) {
   const normalized = normalizeDigits(value).trim()
 
   const match = normalized.match(
-    /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/,
-  )
+  /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/,
+)
 
   if (!match) return null
 
@@ -242,11 +245,11 @@ function FieldInput({
 // این کامپوننت باید بیرون از UsersPage باشد.
 // --------------------------------------------------
 
+
 function JalaliDateField({ name, label }) {
   const [field, meta, helpers] = useField(name)
 
   const hasError = meta.touched && Boolean(meta.error)
-
   const normalizedDate = parseJalaliDate(field.value)
 
   const datePickerValue = normalizedDate
@@ -293,14 +296,14 @@ function JalaliDateField({ name, label }) {
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              alignItems: 'stretch',
               width: '100%',
+              direction: 'ltr',
             }}
           >
             <input
               id={name}
-              name={name}
+              name={field.name}
               type="text"
               inputMode="numeric"
               autoComplete="off"
@@ -320,29 +323,38 @@ function JalaliDateField({ name, label }) {
               className="form-input"
               style={{
                 flex: 1,
+                width: 0,
                 minWidth: 0,
-                boxSizing: 'border-box',
-                direction: 'ltr',
+                borderTopRightRadius: 0,
+                borderBottomRightRadius: 0,
                 textAlign: 'center',
+                direction: 'ltr',
+                boxSizing: 'border-box',
               }}
             />
 
             <button
               type="button"
               onClick={openCalendar}
-              aria-label="انتخاب تاریخ از تقویم"
-              title="انتخاب تاریخ از تقویم"
+              aria-label="انتخاب تاریخ شمسی"
+              title="انتخاب تاریخ شمسی"
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
-                padding: '9px 12px',
+                width: '46px',
                 border: '1px solid #d1d5db',
-                borderRadius: '6px',
+                borderLeft: 0,
+                borderTopRightRadius: '6px',
+                borderBottomRightRadius: '6px',
                 cursor: 'pointer',
                 background: '#fff',
-                fontSize: '18px',
+                color: '#374151',
+                fontSize: '20px',
               }}
             >
-              📅
+              <span aria-hidden="true">▦</span>
             </button>
           </div>
         )}
@@ -364,6 +376,7 @@ function JalaliDateField({ name, label }) {
     </div>
   )
 }
+
 
 // --------------------------------------------------
 // توابع اطلاعات کاربران
